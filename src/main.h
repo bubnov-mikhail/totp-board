@@ -7,4 +7,4 @@
 #include <EncButton.h>
 #include <timeCtrl.h>
 
-#define PIN_BTN 4  // Button
+#define PIN_BTN 6  // Button
