@@ -13,23 +13,39 @@ void TimeCtrl::execute(void)
     lastButtonPressedTimestamp = millis();
     currentComponent = HOURS;
     _display->clearAll();
+    drawComponents();
+    while (true)
+    {
+      _button->tick();
+      if (_button->release())
+      {
+        break;
+      }
+    }
 
     while (true)
     {
         drawComponents();
 
         _button->tick();
-        if (_button->releaseHold()) {
+        if (_button->hold()) {
+            blinkLastUpdated = millis() - blinkRefreshMilis;
+            lastButtonPressedTimestamp = millis();
             nextComponent();
             continue;
         }
 
         if (_button->click()) {
+            blinkLastUpdated = millis() - blinkRefreshMilis;
+            lastButtonPressedTimestamp = millis();
             increaseValue();
             continue;
         }
 
         if (isReachedTimeout(lastButtonPressedTimestamp, returnTimeoutMilis)) {
+            _display->clearAll();
+            _display->print(0, 0, false);
+            delay(3000);
             return;
         }
     }
@@ -57,9 +73,9 @@ void TimeCtrl::drawComponents(void)
     case DAY:
     case MONTH:
     case YEAR:
-        printComponent(HOURS, tm.Day);
-        printComponent(MINUTES, tm.Month);
-        printComponent(SECONDS, yearOffset + tm.Year - 2000); // We have only 2 digits on the display, so let's displaying last decades.
+        printComponent(DAY, tm.Day);
+        printComponent(MONTH, tm.Month);
+        printComponent(YEAR, yearOffset + tm.Year - 2000); // We have only 2 digits on the display, so let's displaying last decades.
         break;
     }
 

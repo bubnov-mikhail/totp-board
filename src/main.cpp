@@ -4,7 +4,8 @@ Display *display;
 TimeCtrl *timeCtrl;
 Button *btn;
 
-void setup() {
+void setup()
+{
   if (!RTC.isRunning())
   {
     tmElements_t tm;
@@ -18,16 +19,17 @@ void setup() {
     RTC.write(tm);
   }
 
-  btn = new Button(PIN_BTN);
+  btn = new Button(PIN_BTN, INPUT_PULLUP, LOW);
   display = new Display();
   timeCtrl = new TimeCtrl(display, btn, &RTC);
 
   display->clearAll();
 }
 
-void loop() {
+void loop()
+{
   // demo
-  display->print(0, 1, true); // номер кода
+  display->print(0, 0, true); // номер кода
   display->print(1, 2, false);
   display->print(2, 3, true);
   display->print(3, 4, false);
@@ -35,7 +37,9 @@ void loop() {
   display->print(5, 6, false);
   display->print(6, 7, true);
 
-  if (btn->hold()) {
+  btn->tick();
+  if (btn->hold())
+  {
     timeCtrl->execute();
   }
 }

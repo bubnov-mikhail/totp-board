@@ -31,13 +31,13 @@ private:
     unsigned long lastButtonPressedTimestamp;
     bool selectComponent = true; // Highligh a selected component
     const static unsigned short int blinkRefreshMilis = 500; // timeout for current time component blinking
-    const static unsigned short int returnTimeoutMilis = 8000; // timeout for exiting from timeCtrl if no button pressed/hold
-    const static short int hoursPosition = 1;
-    const static short int minutesPosition = 3;
-    const static short int secondsPosition = 5;
-    const static short int dayPosition = 1;
-    const static short int monthPosition = 3;
-    const static short int yearPosition = 5;
+    const static unsigned short int returnTimeoutMilis = 10000; // timeout for exiting from timeCtrl if no button pressed/hold
+    const static short int hoursPosition = 0;
+    const static short int minutesPosition = 2;
+    const static short int secondsPosition = 4;
+    const static short int dayPosition = 0;
+    const static short int monthPosition = 2;
+    const static short int yearPosition = 4;
     void drawComponents(void);
     void printComponent(ClockComponent component, short int value);
     void printValue(short int position, short int value);
