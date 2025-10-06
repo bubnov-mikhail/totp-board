@@ -4,6 +4,21 @@ Display *display;
 TimeCtrl *timeCtrl;
 Button *btn;
 
+char lastTotpCode[7];
+uint8_t currentTotp = 0;
+
+bool doBlink = false;
+bool selectComponent = true;
+bool sleepMode = false;
+
+unsigned short int blink10SecondsMilis = 300;
+unsigned short int blink5SecondsMilis = 200;
+unsigned short int blink3SecondsMilis = 100;
+unsigned short int blinkMilis = blink10SecondsMilis;
+unsigned long blinkLastUpdated;
+unsigned long buttonLastClicked;
+unsigned short int backlightTimeoutMilis = 20000;
+
 void setup()
 {
   if (!RTC.isRunning())
@@ -24,22 +39,118 @@ void setup()
   timeCtrl = new TimeCtrl(display, btn, &RTC);
 
   display->clearAll();
+  blinkLastUpdated = millis() - blinkMilis;
+  buttonLastClicked = millis();
+
+  displayCodeName();
 }
 
 void loop()
 {
-  // demo
-  display->print(0, 0, true); // номер кода
-  display->print(1, 2, false);
-  display->print(2, 3, true);
-  display->print(3, 4, false);
-  display->print(4, 5, true);
-  display->print(5, 6, false);
-  display->print(6, 7, true);
+  displayCode();
 
   btn->tick();
+
+  if (btn->click()) {
+    buttonLastClicked = millis();
+    if (sleepMode) {
+      sleepMode = false;
+      display->backlight();
+    } else {
+      currentTotp++;
+      if (currentTotp >= totpCodes) {
+        currentTotp = 0;
+      }
+
+      displayCodeName();
+    }
+  }
+
   if (btn->hold())
   {
     timeCtrl->execute();
+    buttonLastClicked = millis();
+    selectComponent = true;
+    displayCodeName();
   }
+
+  if (isReachedTimeout(buttonLastClicked, backlightTimeoutMilis))
+  {
+    sleepMode = true;
+    display->noBacklight();
+  }
+}
+
+bool isReachedTimeout(unsigned long timestamp, unsigned long timeout)
+{
+  unsigned long m = millis();
+  return m < timestamp ? true : m - timestamp > timeout;
+}
+
+void displayCode()
+{
+  long GMT = RTC.get() + SECS_PER_HOUR * timezoneShiftHours;
+  char* newCode = hmacKeys[currentTotp].totp->getCode(GMT);
+  if(strcmp(lastTotpCode, newCode) != 0) {
+    strcpy(lastTotpCode, newCode);
+  }
+
+  tmElements_t tm;
+  RTC.read(tm);
+  doBlink = (tm.Second >= 20 && tm.Second < 30) || tm.Second >= 50;
+  unsigned short int blinkMilis = blink10SecondsMilis;
+  if ((tm.Second >= 25 && tm.Second < 30) || tm.Second >= 55)
+  {
+    blinkMilis = blink5SecondsMilis;
+  }
+  if ((tm.Second >= 27 && tm.Second < 30) || tm.Second >= 57)
+  {
+    blinkMilis = blink3SecondsMilis;
+  }
+
+  if (!doBlink)
+  {
+    printCode(lastTotpCode, false);
+  }
+
+  if (!isReachedTimeout(blinkLastUpdated, blinkMilis))
+  {
+    return;
+  }
+
+  printCode(lastTotpCode, selectComponent);
+
+  blinkLastUpdated = millis();
+  selectComponent = !selectComponent;
+}
+
+void displayCodeName()
+{
+  display->printChars(0, 0, hmacKeys[currentTotp].name);
+  // for (uint8_t i = 0; i < sizeof(hmacKeys[currentTotp].name)/sizeof(char); i++) {
+  //   if (hmacKeys[currentTotp].name[i] > 0) {
+  //     display->printChars(0, 0, hmacKeys[currentTotp].name);
+  //   } else {
+  //     display->clear(0, i);
+  //   }
+  // }
+}
+
+void printCode(char* code, bool clear)
+{
+  if (clear) {
+    for (uint16_t i = 0; i < 16; i++) {
+      display->clear(1, i);
+    }
+    return;
+  }
+
+  display->clear(1, 0);
+  display->clear(1, 1);
+  for (uint16_t i = 0; i < 6; i++) {
+    display->printChar(1, i*2+2, code[i]);
+    display->clear(1, i*2+3);
+  }
+  display->clear(1, 14);
+  display->clear(1, 15);
 }

@@ -18,16 +18,38 @@ Display::Display()
     lcd.home ();
 }
 
-void Display::print(short int position, short int value, bool withDot)
+void Display::print(short int line, short int position, short int value)
 {
-    lcd.setCursor(position, 0);
+    lcd.setCursor(position, line);
     lcd.print(value, 10);
 }
 
-void Display::clear(short int position, bool withDot)
+void Display::printChar(short int line, short int position, char value)
 {
-    lcd.setCursor(position, 0);
+    lcd.setCursor(position, line);
+    lcd.print(value);
+}
+
+void Display::printChars(short int line, short int position, const char value[])
+{
+    lcd.setCursor(position, line);
+    lcd.print(value);
+}
+
+void Display::clear(short int line, short int position)
+{
+    lcd.setCursor(position, line);
     lcd.print("\x20");
+}
+
+void Display::backlight()
+{
+    lcd.backlight();
+}
+
+void Display::noBacklight()
+{
+    lcd.noBacklight();
 }
 
 void Display::clearAll()

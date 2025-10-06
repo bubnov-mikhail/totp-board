@@ -13,6 +13,8 @@ void TimeCtrl::execute(void)
     lastButtonPressedTimestamp = millis();
     currentComponent = HOURS;
     _display->clearAll();
+    _display->printChars(0, 0, timeCtrlTitle);
+    
     drawComponents();
     while (true)
     {
@@ -44,8 +46,6 @@ void TimeCtrl::execute(void)
 
         if (isReachedTimeout(lastButtonPressedTimestamp, returnTimeoutMilis)) {
             _display->clearAll();
-            _display->print(0, 0, false);
-            delay(3000);
             return;
         }
     }
@@ -66,16 +66,16 @@ void TimeCtrl::drawComponents(void)
     case HOURS:
     case MINUTES:
     case SECONDS:
-        printComponent(HOURS, tm.Hour);
-        printComponent(MINUTES, tm.Minute);
-        printComponent(SECONDS, tm.Second);
+        printComponent(HOURS, tm.Hour, timeSeparator);
+        printComponent(MINUTES, tm.Minute, timeSeparator);
+        printComponent(SECONDS, tm.Second, nonSeparator);
         break;
     case DAY:
     case MONTH:
     case YEAR:
-        printComponent(DAY, tm.Day);
-        printComponent(MONTH, tm.Month);
-        printComponent(YEAR, yearOffset + tm.Year - 2000); // We have only 2 digits on the display, so let's displaying last decades.
+        printComponent(DAY, tm.Day, dateSeparator);
+        printComponent(MONTH, tm.Month, dateSeparator);
+        printComponent(YEAR, yearOffset + tm.Year - 2000, nonSeparator);
         break;
     }
 
@@ -83,7 +83,7 @@ void TimeCtrl::drawComponents(void)
     selectComponent = !selectComponent;
 }
 
-void TimeCtrl::printComponent(ClockComponent component, short int value)
+void TimeCtrl::printComponent(ClockComponent component, short int value, const char separator)
 {
     short int position;
     switch (component)
@@ -109,23 +109,23 @@ void TimeCtrl::printComponent(ClockComponent component, short int value)
     }
 
     if (component == currentComponent && selectComponent) {
-        _display->clear(position, false);
-        _display->clear(position+1, false);
+        _display->clear(1, position);
+        _display->clear(1, position+1);
     } else {
-        printValue(position, value);
+        printValue(position, value, separator);
     }
 }
 
-void TimeCtrl::printValue(short int position, short int value)
+void TimeCtrl::printValue(short int position, short int value, const char separator)
 {
     if (value < 10)
     {
-        _display->print(position, 0, false);
-        _display->print(position+1, value, true);
+        _display->print(1, position, 0);
+        _display->print(1, position+1, value);
     } else {
-        _display->print(position, value / 10, false);
-        _display->print(position+1, value - value / 10 * 10, true);
+        _display->print(1, position, value);
     }
+    _display->printChar(1, position+2, separator);
 }
 
 void TimeCtrl::nextComponent(void)
@@ -158,34 +158,45 @@ void TimeCtrl::nextComponent(void)
 void TimeCtrl::increaseValue(void)
 {
     short int min, max;
-    componentValue++;
+
+    tmElements_t tm;
+    _rtc->read(tm);
+    
     switch (currentComponent)
     {
     case HOURS:
+        componentValue = tm.Hour;
         min = 0;
         max = 23;
         break;
     case MINUTES:
+        componentValue = tm.Minute;
         min = 0;
         max = 59;
         break;
     case SECONDS:
+        componentValue = tm.Second;
         min = 0;
         max = 59;
         break;
     case DAY:
+        componentValue = tm.Day;
         min = 1;
         max = 31;
         break;
     case MONTH:
+        componentValue = tm.Month;
         min = 1;
         max = 12;
         break;
     case YEAR:
+        componentValue = yearOffset + tm.Year;
         min = 2025;
         max = 2050;
         break;
     }
+
+    componentValue++;
 
     if (componentValue < min)
     {
@@ -195,9 +206,6 @@ void TimeCtrl::increaseValue(void)
     {
         componentValue = min;
     }
-
-    tmElements_t tm;
-    _rtc->read(tm);
 
     switch (currentComponent)
     {
