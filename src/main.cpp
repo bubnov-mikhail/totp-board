@@ -5,11 +5,13 @@ TimeCtrl *timeCtrl;
 Button *btn;
 
 char lastTotpCode[7];
+char emptyTotpCode[7] = {""};
 uint8_t currentTotp = 0;
 
 bool doBlink = false;
-bool selectComponent = true;
+bool clear = false;
 bool sleepMode = false;
+bool lcdUpdateRequired = true;
 
 unsigned short int blink10SecondsMilis = 300;
 unsigned short int blink5SecondsMilis = 200;
@@ -41,6 +43,7 @@ void setup()
   display->clearAll();
   blinkLastUpdated = millis() - blinkMilis;
   buttonLastClicked = millis();
+  lcdUpdateRequired = true;
 
   displayCodeName();
 }
@@ -61,16 +64,20 @@ void loop()
       if (currentTotp >= totpCodes) {
         currentTotp = 0;
       }
-
+      clear = false;
+      lcdUpdateRequired = true;
       displayCodeName();
     }
   }
 
   if (btn->hold())
   {
+    display->backlight();
     timeCtrl->execute();
     buttonLastClicked = millis();
-    selectComponent = true;
+    clear = false;
+    lcdUpdateRequired = true;
+    strcpy(lastTotpCode, emptyTotpCode);
     displayCodeName();
   }
 
@@ -91,7 +98,9 @@ void displayCode()
 {
   long GMT = RTC.get() + SECS_PER_HOUR * timezoneShiftHours;
   char* newCode = hmacKeys[currentTotp].totp->getCode(GMT);
+  lcdUpdateRequired = false;
   if(strcmp(lastTotpCode, newCode) != 0) {
+    lcdUpdateRequired = true;
     strcpy(lastTotpCode, newCode);
   }
 
@@ -110,7 +119,11 @@ void displayCode()
 
   if (!doBlink)
   {
-    printCode(lastTotpCode, false);
+    if (lcdUpdateRequired) {
+      printCode(lastTotpCode, false);
+    }
+
+    return;
   }
 
   if (!isReachedTimeout(blinkLastUpdated, blinkMilis))
@@ -118,22 +131,15 @@ void displayCode()
     return;
   }
 
-  printCode(lastTotpCode, selectComponent);
+  printCode(lastTotpCode, clear);
 
   blinkLastUpdated = millis();
-  selectComponent = !selectComponent;
+  clear = !clear;
 }
 
 void displayCodeName()
 {
   display->printChars(0, 0, hmacKeys[currentTotp].name);
-  // for (uint8_t i = 0; i < sizeof(hmacKeys[currentTotp].name)/sizeof(char); i++) {
-  //   if (hmacKeys[currentTotp].name[i] > 0) {
-  //     display->printChars(0, 0, hmacKeys[currentTotp].name);
-  //   } else {
-  //     display->clear(0, i);
-  //   }
-  // }
 }
 
 void printCode(char* code, bool clear)
