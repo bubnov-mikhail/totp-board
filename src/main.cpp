@@ -17,6 +17,7 @@ unsigned short int blink10SecondsMilis = 300;
 unsigned short int blink5SecondsMilis = 200;
 unsigned short int blink3SecondsMilis = 100;
 unsigned short int blinkMilis = blink10SecondsMilis;
+unsigned long displayCodeLastUpdated;
 unsigned long blinkLastUpdated;
 unsigned long buttonLastClicked;
 unsigned short int backlightTimeoutMilis = 20000;
@@ -42,6 +43,7 @@ void setup()
 
   display->clearAll();
   blinkLastUpdated = millis() - blinkMilis;
+  displayCodeLastUpdated = millis() - blink3SecondsMilis;
   buttonLastClicked = millis();
   lcdUpdateRequired = true;
 
@@ -50,8 +52,6 @@ void setup()
 
 void loop()
 {
-  displayCode();
-
   btn->tick();
 
   if (btn->click()) {
@@ -79,6 +79,12 @@ void loop()
     lcdUpdateRequired = true;
     strcpy(lastTotpCode, emptyTotpCode);
     displayCodeName();
+  }
+
+  if (isReachedTimeout(displayCodeLastUpdated, blink3SecondsMilis))
+  {
+    displayCodeLastUpdated = millis();
+    displayCode();
   }
 
   if (isReachedTimeout(buttonLastClicked, backlightTimeoutMilis))
