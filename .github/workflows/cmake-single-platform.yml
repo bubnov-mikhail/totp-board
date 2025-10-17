@@ -20,7 +20,7 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
       - name: Init totpPrivateCode.h
-        run: cp _totpPrivateCode.h totpPrivateCode.h
+        run: cp src/_totpPrivateCode.h src/totpPrivateCode.h
 
       - name: Build PlatformIO Project
         run: pio run
