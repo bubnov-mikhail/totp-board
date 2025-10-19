@@ -39,6 +39,7 @@ void setup()
   }
 
   btn = new Button(PIN_BTN, INPUT_PULLUP, LOW);
+  btn->setDebTimeout(100);
   display = new Display();
   timeCtrl = new TimeCtrl(display, btn, &RTC);
 
